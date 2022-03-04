@@ -1,4 +1,5 @@
 import numpy as np
+from inside_outside import outside #todo name_change? 
 
 def e_step(rules, sents, nts, nts2idx, G):
     # expected_counts = outside()
