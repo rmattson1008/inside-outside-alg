@@ -4,6 +4,8 @@ An implementation of the canonical algorithm (cite) using numpy for rapid calcul
 
 
 TODO 
+- Plan test cases
+
 - Management
     - make package somewhere
         - requirements.txt or something
