@@ -1,7 +1,7 @@
 # Inside-Outside algorithm for PCFG
 An implementation of the canonical algorithm (cite) using numpy for rapid calculation.
 
-
+text input -> fitted pcfg output
 
 TODO 
 - Management
@@ -10,6 +10,7 @@ TODO
     - should be much better documentation.... hmm docstrings, typing
     - parameter passing is messy and sometimes unnecesary. 
     - a couple big functions could be split smaller
+
 - Additions
     - show parse
     - clarify likelihood in EM

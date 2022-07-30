@@ -46,9 +46,15 @@ def load_rules_from_pcfg(path_to_pcfg : str, given_weights: bool =False, delimit
 
     rules = np.loadtxt(path_to_pcfg, delimiter="/n", dtype=str)
 
+    # check that every given pcfg list contains at least 1 unary rule and 1 binary rule
+    # will also throw assertion error if given weights is true when should be false, or vice versa
     if given_weights:
+        assert any(len(rule.split()) == 5 for rule in rules)
+        assert any(len(rule.split()) == 4 for rule in rules)
         BINARY_RULE_LENGTH = 5
     else:
+        assert any(len(rule.split()) == 4 for rule in rules)
+        assert any(len(rule.split()) == 3 for rule in rules)
         BINARY_RULE_LENGTH = 4
 
     if len(rules) > len(np.unique(rules)):
@@ -73,17 +79,18 @@ def load_rules_from_pcfg(path_to_pcfg : str, given_weights: bool =False, delimit
 
         if len(rule) == BINARY_RULE_LENGTH:
             key = (rule[0], rule[2], rule[3])
-            G[key] = prob.astype(np.float)
+            G[key] = prob
             binary_rules.append(key)
 
         elif len(rule) < BINARY_RULE_LENGTH:
             key = (rule[0], rule[2])
-            G[key] = prob.astype(np.float)
+            G[key] = prob
             unary_rules.append(key)
         else:
             print("error")
             print(rule)
 
+    nts = list(nts)
     nts2idx = {}
     for i, nt in enumerate(nts):
         nts2idx[nt] = i
