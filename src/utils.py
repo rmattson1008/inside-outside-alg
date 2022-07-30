@@ -1,47 +1,93 @@
 import numpy as np
+import random as rand
+from nptyping import NDArray, Bool
+import os
 
 
-def load_text(path_to_text):
+def load_text(path_to_text: str, delimiter : str = "/n") -> NDArray:
+    '''
+    Convert a text document of sentences into a NDArray of sentences.
+
+    Parameters:
+        path_to_text: path to .txt file containing 1 or more sentences.
+        delimiter: token that denotes a new sentence - default is '/n'
+
+    Returns:
+        sents: ndarray of sentences
+    '''
+    path_to_text = os.path.normpath(path_to_text)
+    sents = np.loadtxt(path_to_text, delimiter=delimiter, dtype=str,)
     
-    words = np.loadtxt(path_to_text, delimiter="/n", dtype=str,)
-    
-    sents = [[sent.split()] for sent in words]
-    sents = [[sent] for sent in sents if len(sent) > 2] # just a check
-   
-    return words
+    # sents = [[sent.split()] for sent in words]
+    # sents = [[sent] for sent in sents if len(sent) > 2] # just a check
+
+    return sents
 
 
-def load_rules_from_pcfg(path_to_pcfg):
+def load_rules_from_pcfg(path_to_pcfg : str, given_weights: bool =False, delimiter: str = "/n", path_to_prob_dict=[]):
+    '''
+    Convert a text document of PCFG rules into a list of binary and unary rules, and get set of all nonterminal tokens to be used.
+    Also initialize probabilities of PCFG rules
+
+    Parameters:
+        path_to_pcfg (str): path to .txt file containing 1 or more pcfg rules
+        given_weights (bool): True if text file contains wieght for each rule
+        delimiter (str): token that denotes a new rule- default is "/n"
+
+    Returns:
+        binary_rules: list of tuple pairs for binary rules, ie (Parent, child, child)
+        unary_rules: list of tuple pairs for unary rules, ie (Parent, child) where the child is a terminal word
+        nts: set of all nonterminal tokens, ie unary rule labels and binary rule labels 
+        nts2idx: dict util to convert nts to idx value.
+        g: dict where the keys are the unary/binary rule, and the value is g, the probablity* of that rule. For now, g is initialized randomly
+
+    '''
+    # TODO - initialize g based of user input
+
     rules = np.loadtxt(path_to_pcfg, delimiter="/n", dtype=str)
-    binary_rule_length = len(rules[0].split())
-    rules = np.unique(rules)
+
+    if given_weights:
+        BINARY_RULE_LENGTH = 5
+    else:
+        BINARY_RULE_LENGTH = 4
+
+    if len(rules) > len(np.unique(rules)):
+        rules = np.unique(rules)
+        print(f"There are repeated rules in the input file. Removing .{len(rules) - len(np.unique(rules))} redundant rules and continuing.")
 
     binary_rules = []
     unary_rules = []
-    nts = []
-    
+    nts = set()
+
+    G = {}
+
     for rule in rules:
         rule = rule.split()
-        
-        if rule[0] not in nts:
-            nts.append(rule[0])
-        if len(rule) == binary_rule_length:
-            # print(rule)
+        assert len(rule) >= 3 and len(rule) <= 5
+        if given_weights:
+                prob = rule[-1]
+        else:
             prob = rand.random()
-            rule = np.array([rule[0], rule[2], rule[3], prob])
-            binary_rules.append(rule)
 
-        elif len(rule) < binary_rule_length:
-            prob = rand.random()
-            rule = np.array([rule[0], rule[2], prob])
-            unary_rules.append(rule)
+        nts.add(rule[0])
+
+        if len(rule) == BINARY_RULE_LENGTH:
+            key = (rule[0], rule[2], rule[3])
+            G[key] = prob.astype(np.float)
+            binary_rules.append(key)
+
+        elif len(rule) < BINARY_RULE_LENGTH:
+            key = (rule[0], rule[2])
+            G[key] = prob.astype(np.float)
+            unary_rules.append(key)
         else:
             print("error")
             print(rule)
+
+    nts2idx = {}
+    for i, nt in enumerate(nts):
+        nts2idx[nt] = i
     
 
-    
-    binary_rules = np.array(binary_rules) 
-    unary_rules = np.array(unary_rules) 
-    return unary_rules, binary_rules, nts
+    return unary_rules, binary_rules, nts, nts2idx, G
     
