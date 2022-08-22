@@ -1,196 +1,164 @@
+from cmath import log
 import numpy as np
 from inside_outside import outside, get_list_of_rules_starting_with #todo name_change? 
-import tqdm
+from tqdm import tqdm
 
 def e_step(args, G):
-
-    print("calculating expected counts...")
+    """
+        Calculates expected counts i.e. the expected frequency of a rule occuring in the training sentences. 
+    """
+    # keep track of frequency of possible rules for each sentence
     expected_counts_vec = []
     Zs = []
-    progress_bar = tqdm(args.sents)
-    for sent in args.sents:
-        # print(sent.split())
+    progress_bar = tqdm(args.train_sents)
+    for sent in args.train_sents:
         if len(sent.split()) <= 2:
+            print(f'Skipping sentence "{sent}" as it is too short.')
             continue
         count, Z = outside(sent, args, G)
-        expected_counts_vec.append(count)
+        expected_counts_vec.append(count) #????? big problem here. 
+        # TODO - Please sum up counts on each step? Is it better to sum that every time or store a vector of dictionaries n long? 
         Zs.append(Z)
         progress_bar.update()
     progress_bar.close()
     
-    avg_likelihood = np.mean(Zs)
-    Zs = [Z for Z in Zs if Z >0.0]
-    avg_log_likelihood = np.log(Zs)
-    var = np.std(avg_log_likelihood)
-    avg_log_likelihood = np.mean(avg_log_likelihood)
-    # print("avg_likelihood", avg_likelihood)
-    print("avg_log_likelihood?", avg_log_likelihood)
-    print("var", var)
-
-     # likelihood = get_likelihood(expected_counts_vec, args.unary_rules, args.binary_rules, G)
-    # print("new likelihood", likelihood) # I do think its log likelihood...
-    return expected_counts_vec, avg_log_likelihood
-
-# def e_step2(args, G):
-# # expected_counts = outside()
+    return expected_counts_vec, Zs
 
 
-#     print("calculating expected counts...")
-#     expected_counts_vec = []
-#     Zs = []
-#     progress_bar = tqdm(args.sents)
-#     for sent in args.sents:
-#         # print(sent.split())
-#         if len(sent.split()) <= 2:
-#             continue
-#         count, Z = outside(sent, args, G)
-#         expected_counts_vec.append(count)
-#         Zs.append(Z)
-#         progress_bar.update()
-#     progress_bar.close()
-    
-#     avg_likelihood = np.mean(Zs)
-#     Zs = [Z for Z in Zs if Z >0.0]
-#     avg_log_likelihood = np.log(Zs)
-#     var = np.std(avg_log_likelihood)
-#     avg_log_likelihood = np.mean(avg_log_likelihood)
-#     # print("avg_likelihood", avg_likelihood)
-#     # print("avg_log_likelihood?", avg_log_likelihood)
-#     # print("var", var)
 
-    # log_likelihood = get_likelihood(expected_counts_vec, args.unary_rules, args.binary_rules, G)
-    # print("likelihood", log_likelihood) 
-    # return expected_counts_vec, log_likelihood
-
-
-def m_step(expected_counts_vec, args):
-    # print("Example exp.counts", expected_counts_vec)
-    print("M Step")
-
-    
-    # args.unary_rules = rules[0]
-    # args.binary_rules = rules[1]
+def m_step( args, expected_counts_vec):
+    """Updates thetas, the model parameters, to the value that maximizes the cost function"""
     thetas = {}
     sum_occurrences_of_A = {}
 
-    # print("building dict summing all occurrences of A")
-    # print(nts)
+    # get a dictionary of the expected frequncy of rules beginning with each nt
     for nt in args.nts:
         un_counts = 0
         bin_counts = 0
-   
         A_rules = get_list_of_rules_starting_with(nt, args.unary_rules)
-        # print("U", len(A_rules))
         if A_rules:
             for rule in A_rules:
                 un_counts += np.sum([count[rule] for count in expected_counts_vec]) 
-            # print(summed_counts)
-        
         A_rules = get_list_of_rules_starting_with(nt, args.binary_rules)
-        # print("B", len(A_rules))
         if A_rules:
             for rule in A_rules:
                 bin_counts += np.sum([count[rule] for count in expected_counts_vec]) 
-            
         sum_occurrences_of_A[nt] = bin_counts + un_counts
         if sum_occurrences_of_A[nt] == 0.0:
             print("ZERO", nt)
 
-
-
-    # print("Calculating unary theta rules...")
+    # Calculate unary rule weights
     for rule in args.unary_rules:
         A,w = rule
         summed_count = np.sum([count[rule] for count in expected_counts_vec]) 
 
-        # assert sum_occurrences_of_A[A] > 0.0
-        # assert summed_count <= sum_occurrences_of_A[A]
+        assert sum_occurrences_of_A[A] > 0.0
+        assert summed_count <= sum_occurrences_of_A[A] + .01
+        # Note: this assertion will sometimes be thrown when summed count appears to == sum_occures, but is lightly greater in value. adding the .01 threshold stops this being thrown erroneosly. 
         if sum_occurrences_of_A[A] > 0.0:
             thetas[rule] =  np.exp((summed_count / sum_occurrences_of_A[A]))
-            # print("sum occurrences",sum_occurrences_of_A[A] )
-            # print("nonzero rule", rule, thetas[rule])
         else:
             thetas[rule] =  0.0
-    # except:
-        # thetas[rule] =  0.0
-            
-    # print("Calculating binary theta rules...")
+
+    # Calculate binary rule weights
     for rule in args.binary_rules:
 
         A,B,C = rule
         summed_count = sum([count[rule] for count in expected_counts_vec]) 
        
-        # assert summed_count <= sum_occurrences_of_A[A]
+        assert sum_occurrences_of_A[A] > 0.0
+        assert summed_count <= sum_occurrences_of_A[A] + 0.1
+
         if sum_occurrences_of_A[A] > 0.0:
             thetas[rule] =  np.exp((summed_count / sum_occurrences_of_A[rule[0]]))
-            # print("sum occurrences",sum_occurrences_of_A[A] )
-            # print("nonzero rule",rule, thetas[rule])
         else:
             thetas[rule] =  0.0
-
     return thetas
 
 
-def EM(args, G, max_iter=10):
+def EM(args, G, max_iter=20):
+    """
+    Carries out the Expectation-Maximization algorithm using the inside-outside theorem to 
+    estimate the frequency of a pcfg rule in the E-step and a pcfg specific process to update model parameters
+    during the M-step. The algorithm will iterate until updating the model parameters does not significantly 
+    increase the likelihood it describes the given sentences, or until the maximum number of iterations is reached.
+
+    parameters:
+        args: argument manager
+        G: dict containing initial rule weights
+        max-iter: the maximum number of iterations of EM
+
+    returns:
+        g: the final rule weights
+        thetas: the final rule weights in log form
+        : The final likelihood of learned weights
+
+    """
     THRESHOLD = .01
-    THRESHOLD = .1
-    MIN_THETA = .0001
-    change = 1
-    avg_loglikelihoods = []
-    iters = 1
-    g = G #TODO why can't I keep updating this. 
-    thetas = []
+    iters = 0
+    g = G.copy()
+    thetas = {}
     avg_likelihoods = []
 
-    
-    # args.unary_rules, args.binary_rules = rules
-   
-    # rules = [unary_tuples, binary_tuples]
-
     while True:
-        print("ITER", iters)
-        # _, loglikelihoods = e_step(rules, sents)
-        expected_counts_vec, avg_likelihood = e_step(args, g)
+        iters += 1 
+        print(f"Iteration {iters}")
+        expected_counts_vec, Zs = e_step(args, g)
+        thetas = m_step(args, expected_counts_vec)
 
-        avg_likelihoods.append(avg_likelihood)
+        total_likelihood = get_total_log_likelihood(args, expected_counts_vec, g) 
+        other_likelihood = get_likelihood_from_parse_tree(Zs) 
+        print("other likelihood", other_likelihood) #this makes no sense
+        avg_likelihood_per_rule = total_likelihood / len(expected_counts_vec)
+        print("Avg log likelihood", avg_likelihood_per_rule) #this makes no sense
+
+        avg_likelihoods.append(avg_likelihood_per_rule)
         if len(avg_likelihoods) > 2:
-            print("DIFF", abs(avg_likelihoods[-1] - avg_likelihoods[-2]))
+            print(f"Debugging: Difference in likelihoods is {abs(avg_likelihoods[-1] - avg_likelihoods[-2])} from iteration {iters-1} to {iters}", )
 
         if len(avg_likelihoods) > 2 and abs(avg_likelihoods[-1] - avg_likelihoods[-2]) < THRESHOLD:
-            print("NO IMPROVEMENT")
+            print(f"No significant improvement on iteration {iters}. Exiting.")
             break
-        elif iters >max_iter:
+        elif iters > max_iter:
+            print("Reached maximum iterations specified. Exiting.")
             break
-        # E step:
-        # u_thetas, b_thetas = m_step(expected_counts_vec, rules)
-        thetas = m_step(args, expected_counts_vec)
-        # g = thetas
 
-        # TODO - flex g
-        for rule in args.args.unary_rules:
-            # these if statements are now unnecesary
-            if thetas[rule] < MIN_THETA:
+        # rewrite g based on updated thetas
+        for rule in args.unary_rules:
                 g[rule] = np.exp(thetas[rule])
-            else:
-                g[rule] = np.exp(thetas[rule])
-        for rule in args.args.binary_rules:
-            if thetas[rule] < MIN_THETA:
-                g[rule] = np.exp(thetas[rule])
-            else:
+        for rule in args.binary_rules:
                 g[rule] = np.exp(thetas[rule])
 
-        # break
-        iters += 1 
-        
-    print("EXITING after", iters, "iters of e_step")
+        # TODO - test that min theta is no longer needed for vanishing/exploding weights
+
     return g, thetas, avg_likelihoods[-1]
 
 
-def get_likelihood(expected_counts_vec, args, g):
+def get_total_log_likelihood( args, expected_counts_vec, g):
+    """
+    Total log likelihood of observed trees.
+    Equation 6 of https://www.borealisai.com/research-blogs/tutorial-19-parsing-iii-pcfgs-and-inside-outside-algorithm/
+    """
     likelihood = 0 # shape 
     for count in expected_counts_vec: 
-        for rule in args.args.unary_rules:
+        for rule in args.unary_rules:
             likelihood += count[rule] * np.log(g[rule])
-        for rule in args.args.binary_rules:
+        for rule in args.binary_rules:
             likelihood += count[rule] * np.log(g[rule])
     return likelihood 
+
+
+def get_likelihood_from_parse_tree(Zs):
+    """
+    "For each test document, compute its likelihood for each grammar Gi by multiplying the
+        probability of the top PCFG parse for each
+        sentence." - https://www.cs.utexas.edu/users/ml/papers/raghavan.acl10.pdf
+
+        parameters: 
+        Zs: list of probability of top PCFG parse for each sentence
+
+    """
+    Zs = [Z for Z in Zs if Z > 0.0]
+    log_likelihoods = np.log(Zs)
+    avg_likelihood = np.mean(log_likelihoods)
+    return avg_likelihood
