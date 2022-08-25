@@ -1,31 +1,20 @@
 # Inside-Outside algorithm for PCFG
 An implementation of the canonical algorithm (cite) using numpy for rapid calculation.
 
-text input -> fitted pcfg output
 
-TODO 
-- Test cases for EM and Chart edge cases
+Work in progress. Tasks left:
+
+- Functionality
+   - Test cases for EM and Chart edge cases
 
 - Management
-   
-    - requirements.txt
-    - should be much better documentation
+    - requirements
     - input arg manager
 
 - Additions
     - show parse
-    - maybe handle bad user input, catch gracefully
-    - more variation in user inputs
-
-________
-Testing
-
-This repo contains a few small files to use test existing functions. The toy PCFG is a caonical example borrowed from [link to repo].
-
-________
-Installation
-Todo - requirements.txt
-
+    - maybe handle bad user input
+    - handle more variation in user input
 
 
 ________
