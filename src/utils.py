@@ -2,7 +2,7 @@ import numpy as np
 import random as rand
 from nptyping import NDArray, Bool
 import os
-
+from nltk.grammar import PCFG
 
 def load_text(path_to_text: str, delimiter : str = "/n") -> NDArray:
     '''
@@ -22,6 +22,33 @@ def load_text(path_to_text: str, delimiter : str = "/n") -> NDArray:
     # sents = [[sent] for sent in sents if len(sent) > 2] # just a check
 
     return sents
+
+# def load_grammar(path_to_pcfg : str):
+#     path_to_pcfg = os.path.normpath(path_to_pcfg)
+#     sents = np.loadtxt(path_to_text, delimiter="/n", dtype=str,)
+#     grammar = PCFG.from_string(sents)  
+#     return grammar
+
+
+
+def convert_updated_pcfg_to_string(args, weights, path_to_pcfg, given_weights: bool =False) -> str:
+    path_to_pcfg = os.path.normpath(path_to_pcfg)
+    rules = np.loadtxt(path_to_pcfg, delimiter="/n", dtype=str,)
+    grammar = ""
+    for rule in args.unary_rules:
+        rule = str(rule[0]) + " -> " + str(rule[1]) + ' [' + str(weights[rule]) + ']'
+        grammar = grammar + '\n' + rule
+
+    for rule in args.binary_rules:
+        rule = str(rule[0]) + " -> " + str(rule[1]) + ' ' + str(rule[1]) + ' [' + str(weights[rule]) + ']'
+        grammar = grammar + '\n' + rule
+
+    print("Grammar:")
+    print(grammar)
+
+    return grammar
+
+
 
 
 def load_rules_from_pcfg(path_to_pcfg : str, given_weights: bool =False, delimiter: str = "/n", path_to_prob_dict=[]):

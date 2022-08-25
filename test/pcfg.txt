@@ -8,5 +8,5 @@ NP -> ears
 NP -> saw 
 NP -> stars 
 NP -> telescopes 
-P -> with 
+P -> with
 V -> saw 

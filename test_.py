@@ -1,3 +1,4 @@
+from src.expectation_maximization import e_step
 from src.utils import load_text, load_rules_from_pcfg
 import os
 import pytest
@@ -60,5 +61,13 @@ def test_load_g():
 # def test_create_pcfg():
 #     """assert correct rules are created when starting from nts."""
 # # 
-    return
+    # return
+
+# def test_e_step_output():
+#     args = Args()
+#     args.train_sents = load_text(path_to_sents)
+#     args.unary_rules, args.binary_rules, args.nts, args.nts2idx, G = load_rules_from_pcfg(path_to_pcfg)
+#     # e_step
+#     # len(expected counts vec  = len sents)
+#     # why tho can't I just sum as I go...
 

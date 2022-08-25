@@ -1,5 +1,3 @@
-from gettext import npgettext
-from nptyping import Float
 import numpy as np
 import random as rand
 
@@ -68,23 +66,22 @@ def inside(words, args, g) -> Chart:
     # print("pretty" in words)
     unary = [x for x in args.unary_rules if x[1] in words]
 
-    v = max(len(unary), len(args.binary_rules))
-    substitute_rule = rand.choice(args.unary_rules)
 
+    
+    # v = max(len(unary), len(args.binary_rules))
+    # traverse unary rules
     for k in range(n):
-        # print("word", words[k])
+        # gather list of rules to examine
         relevant_rules = [x for x in unary if words[k] in x]
-        # print(rules)
-        # print("Chart span", k, k+1)
         if not relevant_rules:
-            print("no unary rule found for ", words[k])
-            prob = g[substitute_rule]
-            chart.set(k, k+1, substitute_rule[0], value=prob)
+            print("No unary rule found for '", words[k], "', please clean up your input")
+            exit()
         for rule in relevant_rules:
             prob = g[rule]
             chart.set(k, k+1, rule[0], value=prob)
 
-    examined = []
+
+    # examined = []
     for sub_string_length in range(2, n+1):
         # print("substring length", sub_string_length)
         # print("L", l)
@@ -95,16 +92,19 @@ def inside(words, args, g) -> Chart:
             # print("Chart span", start_idx, end_idx)
             for mid_idx in range(start_idx + 1, end_idx):  # IDX???????
                 # print("subtrees:", start_idx, mid_idx, end_idx)
-                examined.append((start_idx, end_idx))
+                # examined.append((start_idx, end_idx))
                 for rule in args.binary_rules:
                     A, B, C = rule
-                    # print(rule)
-                    # g = rule[-1].astype(np.float)
+                    # if g[rule] > 1.0:
+                        # print(g[rule])
+                        # exit()
                     new_prob = g[rule] * chart.get(start_idx,
                                                    mid_idx, B) * chart.get(mid_idx, end_idx, C)
                     # new_prob = chart.get(start_idx, mid_idx, B) * chart.get(mid_idx, end_idx, C)
                     chart.add(start_idx, end_idx, A, value=new_prob)
+                    # chart.set(start_idx, end_idx, A, value=new_prob)
 
+    # chart.print(num_slices=-1)
     return chart
 
 
@@ -130,17 +130,27 @@ def outside(sent, args, g) -> "tuple[dict, float]":
         out_rules[rule] = 0.0
     counts = out_rules.copy()
 
-    # TODO
     inside_weights = inside(words, args, g)
-    # print("LEAVING INSIDE")
-    Z = inside_weights.get(0, n, "S")
+
+    Z = inside_weights.get(0, n, "S") # why would this ever be in the thousands. 
+    try:
+        assert Z > 0.0
+    except AssertionError:
+        # I think if z is 0 I just take g instead of the calculated count
+        for rule in args.unary_rules:
+            counts[rule] = g[rule]
+            # counts[rule] = 0
+        for rule in args.binary_rules:
+            counts[rule] = g[rule]
+        return counts, Z
 
     # return counts, 1
 
     out_weights = Chart(args.nts, args.nts2idx, args.unary_rules, args.binary_rules, words)
 
     out_weights.add(0, n, "S", value=1)
-    examined = []
+    # examined = []
+    # traverse binary rules
     for sub_string_length in reversed(range(2, n+1)):  # ???
         for start_idx in range(n-sub_string_length + 1):
            # for start_idx in range(n-sub_string_length):
@@ -150,12 +160,12 @@ def outside(sent, args, g) -> "tuple[dict, float]":
 
             for mid_idx in range(start_idx + 1, end_idx):  # IDX???????
                 # print("subtrees:", start_idx, mid_idx, end_idx)
-                examined.append((start_idx, mid_idx, end_idx))
+                # examined.append((start_idx, mid_idx, end_idx))
                 for rule in args.binary_rules:
-                    # I think the first must be S
                     A, B, C = rule
-                    # print("current prob", g)
-                    # g = g.astype(np.float)
+                    # if g[rule] > 1.0:
+                        # print(g[rule])
+                        # exit()
                     out_rules[rule] += out_weights.get(start_idx, end_idx, A) * inside_weights.get(
                         start_idx, mid_idx, B) * inside_weights.get(mid_idx, end_idx, C)
                     probB = out_weights.get(
@@ -164,7 +174,7 @@ def outside(sent, args, g) -> "tuple[dict, float]":
                         start_idx, end_idx, A) * g[rule] * inside_weights.get(start_idx, mid_idx, B)
                     out_weights.add(start_idx, mid_idx, B, probB)
                     out_weights.add(mid_idx, end_idx, C, probC)
-
+    #travers unary rules
     for k in range(n-1):
         relevant_rules = [x for x in args.unary_rules if words[k] in x]
         # print("Chart span", k, k+1)
@@ -173,33 +183,23 @@ def outside(sent, args, g) -> "tuple[dict, float]":
             # print(rule)
             out_rules[rule] += out_weights.get(k, k+1, A)
 
-    try:
-        assert Z > 0.0
-    except AssertionError:
-        # what the hell is this?? 
-        # I think if z is 0 I just take g instead of the calculated count
-        # TODO - percolate this better
-        for rule in args.unary_rules:
-            counts[rule] = g[rule]
-            # counts[rule] = 0
-        for rule in args.binary_rules:
-            counts[rule] = g[rule]
+   
             # counts[rule] = 0
         # print("_____")
-        print("NO TREE FOUND - Z:0")
-        print("INSIDE")
-        print(inside_weights.print())
-        print("OUTSIDE")
-        print(out_weights.print())
-        # COUNT_Z_IS_ZERO +=1
-        print(words)
-        return counts, Z
+        # print("NO TREE FOUND - Z:0")
+        # print("INSIDE")
+        # print(inside_weights.print())
+        # print("OUTSIDE")
+        # print(out_weights.print())
+
+        
 
     for rule in args.unary_rules:
         counts[rule] = (1/Z) * out_rules[rule] * g[rule]
     for rule in args.binary_rules:
         counts[rule] = (1/Z) * out_rules[rule] * g[rule]
 
+    # out_weights.print()
     return counts, Z
 
 
