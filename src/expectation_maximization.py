@@ -1,5 +1,7 @@
 import numpy as np
-from inside_outside import outside, get_list_of_rules_starting_with #todo name_change? 
+# from inside_outside import outside, get_list_of_rules_starting_with #todo name_change? 
+# from inside_outside import outside, get_list_of_rules_starting_with #todo name_change? 
+import inside_outside 
 from tqdm import tqdm
 
 def e_step(args, sents, G):

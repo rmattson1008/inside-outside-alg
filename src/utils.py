@@ -2,7 +2,7 @@ import numpy as np
 import random as rand
 from nptyping import NDArray, Bool
 import os
-from nltk.grammar import PCFG
+
 
 def load_text(path_to_text: str, delimiter : str = "/n") -> NDArray:
     '''
@@ -29,7 +29,22 @@ def load_text(path_to_text: str, delimiter : str = "/n") -> NDArray:
 #     grammar = PCFG.from_string(sents)  
 #     return grammar
 
-
+class Args():
+    '''
+    Simple class to keep track of static variables. should upgrade to command line arg...
+    '''
+    def __init__(self):
+        # self.path_to_sents
+        # self.path_to_pcfg
+        self.unary_rules = None
+        self.binary_rules = None
+        self.nts = None
+        self.nts2idx = None
+        self.train_sents = None
+        # self.test_sents = None
+        self.unary_rules = None
+        self.binary_rules = None
+        return
 
 def convert_updated_pcfg_to_string(args, weights, path_to_pcfg, given_weights: bool =False) -> str:
     path_to_pcfg = os.path.normpath(path_to_pcfg)
