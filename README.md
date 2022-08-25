@@ -8,7 +8,7 @@ Work in progress. Tasks left:
    - Test cases for EM and Chart edge cases
 
 - Management
-    - requirements
+    - requirements or better package set up
     - input arg manager
 
 - Additions
