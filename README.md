@@ -1,5 +1,5 @@
 # Inside-Outside algorithm for PCFG
-An implementation of the canonical algorithm (cite) using numpy for rapid calculation.
+An implementation of the canonical algorithm using numpy for rapid calculation.
 
 
 Work in progress. Tasks left:
@@ -18,4 +18,4 @@ Work in progress. Tasks left:
 
 
 ________
-This time for this algorithm scales rapidy with the size of the sentence input. Some work arounds are to truncate each sentence to a short length or to mitigate the problem by using fine-to-course PCFG structures. Another addition could be to automatically break a sentence into two separate subtrees if it is a certain length, and don't keep track of the relationship between all rules.
+This time for this algorithm scales rapidy with the size of the sentence input. Some work arounds are to truncate each sentence to a short length or to mitigate the problem by using fine-to-coarse PCFG structures. Another addition could be to automatically break a sentence into two separate subtrees if it is a certain length, and don't keep track of the relationship between all rules.
