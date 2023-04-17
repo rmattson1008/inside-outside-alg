@@ -19,4 +19,4 @@ Work in progress. Tasks left:
 There are also a lot of hanging comments/notes to self, so looking through the code may be confusing at this point in time.
 
 ________
-This time for this algorithm scales rapidy with the size of the sentence input. Some work arounds are to truncate each sentence to a short length or to mitigate the problem by using fine-to-coarse PCFG structures. Another addition could be to automatically break a sentence into two separate subtrees if it is a certain length, and don't keep track of the relationship between all rules.
+The time complexity for this algorithm scales rapidy with the size of the sentence. Some work-arounds are to truncate each sentence to a short length or to use fine-to-coarse PCFG structures. Another addition could be to automatically break a sentence into two separate subtrees if it is a certain length, and don't keep track of the relationship between all rules.
